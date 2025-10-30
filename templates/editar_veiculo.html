@@ -1,0 +1,35 @@
+{% extends "admin_layout.html" %}
+{% block title %}Editar Veículo{% endblock %}
+
+{% block content %}
+    <h1>Editar Veículo: {{ veiculo.marca }} {{ veiculo.modelo }}</h1>
+    
+    <div class="form-card">
+        <form method="POST">
+            <div class="form-grid">
+                <div>
+                    <label for="v_marca">Marca:</label>
+                    <input type="text" id="v_marca" name="marca" value="{{ veiculo.marca }}" required>
+                </div>
+                <div>
+                    <label for="v_modelo">Modelo:</label>
+                    <input type="text" id="v_modelo" name="modelo" value="{{ veiculo.modelo }}" required>
+                </div>
+                <div>
+                    <label for="v_capacidade">Capacidade da Bateria (kWh):</label>
+                    <input type="number" step="0.1" id="v_capacidade" name="capacidade_bateria_kwh" value="{{ veiculo.capacidade_bateria_kwh }}" required>
+                </div>
+                <div>
+                    <label for="v_potencia_max_ac">Potência Máx. Carga AC (kW):</label>
+                    <input type="number" step="0.1" id="v_potencia_max_ac" name="potencia_max_carga_ac_kw" value="{{ veiculo.potencia_max_carga_ac_kw }}" required>
+                </div>
+                <div>
+                    <label for="v_potencia_max_dc">Potência Máx. Carga DC (kW):</label>
+                    <input type="number" step="0.1" id="v_potencia_max_dc" name="potencia_max_carga_dc_kw" value="{{ veiculo.potencia_max_carga_dc_kw }}" required>
+                </div>
+            </div>
+            <button type="submit">Salvar Alterações</button>
+            <a href="{{ url_for('admin_veiculos') }}" style="margin-left: 10px; color: #777;">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

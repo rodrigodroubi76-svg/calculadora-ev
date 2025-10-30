@@ -1,0 +1,88 @@
+{% extends "admin_layout.html" %}
+{% block title %}Gerenciar Carregadores{% endblock %}
+
+{% block content %}
+    <h1>Gerenciar Carregadores</h1>
+    
+    <div class="form-card">
+        <h2>Cadastrar Novo Carregador (Manual)</h2>
+        <form action="{{ url_for('add_carregador') }}" method="POST">
+            <div class="form-grid">
+                <div>
+                    <label for="c_marca">Marca:</label>
+                    <input type="text" id="c_marca" name="marca" required>
+                </div>
+                <div>
+                    <label for="c_modelo">Modelo:</label>
+                    <input type="text" id="c_modelo" name="modelo" required>
+                </div>
+                <div>
+                    <label for="c_potencia">Potência de Saída (kW):</label>
+                    <input type="number" step="0.1" id="c_potencia" name="potencia_saida_kw" required>
+                </div>
+                <div>
+                    <label for="c_tipo">Tipo de Corrente:</label>
+                    <select id="c_tipo" name="tipo_corrente" required>
+                        <option value="AC">AC (Carga Lenta/Média)</option>
+                        <option value="DC">DC (Carga Rápida)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="c_preco">Preço (R$):</label>
+                    <input type="number" step="0.01" id="c_preco" name="preco" value="0.0">
+                </div>
+            </div>
+            <button type="submit">Cadastrar Carregador</button>
+        </form>
+    </div>
+    <hr>
+    <div class="form-card">
+        <h2>Importar Carregadores via CSV</h2>
+        <form action="{{ url_for('importar_carregadores') }}" method="POST" enctype="multipart/form-data">
+            <p>Colunas: <strong>marca, modelo, potencia_saida_kw, tipo_corrente, preco</strong></p>
+            <label for="csv_file">Ficheiro CSV:</label>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+            <button type="submit">Importar CSV</button>
+        </form>
+    </div>
+
+    <hr>
+
+    <div class="form-card">
+        <h2>Carregadores Cadastrados</h2>
+        <style>
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f0f0f0; }
+        </style>
+        <table>
+            <thead>
+                <tr>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Potência (kW)</th>
+                    <th>Tipo</th>
+                    <th>Preço (R$)</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in carregadores %}
+                <tr>
+                    <td>{{ c.marca }}</td>
+                    <td>{{ c.modelo }}</td>
+                    <td>{{ c.potencia_saida_kw }}</td>
+                    <td>{{ c.tipo_corrente }}</td>
+                    <td>{{ "%.2f"|format(c.preco) }}</td> <td>
+                        <a href="{{ url_for('editar_carregador', carregador_id=c.id) }}">Editar</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">Nenhum carregador cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

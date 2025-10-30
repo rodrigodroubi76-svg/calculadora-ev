@@ -1,0 +1,42 @@
+{% extends "admin_layout.html" %}
+{% block title %}Editar Carregador{% endblock %}
+
+{% block content %}
+    <h1>Editar Carregador: {{ carregador.marca }} {{ carregador.modelo }}</h1>
+    
+    <div class="form-card">
+        <form method="POST">
+            <div class="form-grid">
+                <div>
+                    <label for="c_marca">Marca:</label>
+                    <input type="text" id="c_marca" name="marca" value="{{ carregador.marca }}" required>
+                </div>
+                <div>
+                    <label for="c_modelo">Modelo:</label>
+                    <input type="text" id="c_modelo" name="modelo" value="{{ carregador.modelo }}" required>
+                </div>
+                <div>
+                    <label for="c_potencia">Potência de Saída (kW):</label>
+                    <input type="number" step="0.1" id="c_potencia" name="potencia_saida_kw" value="{{ carregador.potencia_saida_kw }}" required>
+                </div>
+                <div>
+                    <label for="c_tipo">Tipo de Corrente:</label>
+                    <select id="c_tipo" name="tipo_corrente" required>
+                        <option value="AC" {% if carregador.tipo_orrente == 'AC' %}selected{% endif %}>
+                            AC (Carga Lenta/Média)
+                        </option>
+                        <option value="DC" {% if carregador.tipo_corrente == 'DC' %}selected{% endif %}>
+                            DC (Carga Rápida)
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label for="c_preco">Preço (R$) - (O SEU PREÇO)</label>
+                    <input type="number" step="0.01" id="c_preco" name="preco" value="{{ carregador.preco }}">
+                </div>
+            </div>
+            <button type="submit">Salvar Alterações</button>
+            <a href="{{ url_for('admin_carregadores') }}" style="margin-left: 10px; color: #777;">Cancelar</a>
+        </form>
+    </div>
+{% endblock %}

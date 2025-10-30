@@ -1,0 +1,12 @@
+# Ambiente Virtual (NUNCA enviar)
+venv/
+
+# Banco de dados local
+*.db
+
+# Ficheiros de cache do Python
+__pycache__/
+*.pyc
+
+# Ficheiros do VS Code
+.vscode/

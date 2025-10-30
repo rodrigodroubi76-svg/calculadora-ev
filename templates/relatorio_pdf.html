@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Recarga</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+        h1 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .info-box { background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .info-box p { margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f0f0f0; }
+        tr.best-choice { background-color: #d4edda; font-weight: bold; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Relatório Comparativo de Carregadores</h1>
+    
+    <div class="info-box">
+        <h2>Veículo Selecionado</h2>
+        <p><strong>Modelo:</strong> {{ veiculo_selecionado.nome_completo }}</p>
+        <p><strong>Potência Máx. AC:</strong> {{ veiculo_selecionado.potencia_max_carga_ac_kw }} kW</p>
+        <p><strong>Potência Máx. DC:</strong> {{ veiculo_selecionado.potencia_max_carga_dc_kw }} kW</p>
+    </div>
+    
+    <div class="info-box">
+        <h2>Estimativa de Custos (Base)</h2>
+        <p><strong>Custo do kWh:</strong> R$ {{ custos_info.custo_kwh }}</p>
+        <p><strong>Recargas/Mês (20-80%):</strong> {{ custos_info.recargas_mes }}</p>
+        <hr>
+        <p><strong>Custo por Recarga:</strong> R$ {{ custos_gerais.custo_por_recarga | round(2) }}</p>
+        <p><strong>Gasto Mensal:</strong> R$ {{ custos_gerais.custo_mensal | round(2) }}</p>
+        <p><strong>Gasto Anual:</strong> R$ {{ custos_gerais.custo_anual | round(2) }}</p>
+    </div>
+
+    <h2>Tabela Comparativa</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Carregador (Tipo)</th>
+                <th>Potência Efetiva</th>
+                <th>Tempo (20% a 80%)</th>
+                <th>Preço do Carregador</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in resultados_comparativos %}
+                <tr class="{% if loop.first %}best-choice{% endif %}">
+                    <td>
+                        {{ res.carregador.marca }} {{ res.carregador.modelo }} 
+                        (<strong>{{ res.carregador.tipo_corrente }}</strong>)
+                        {% if loop.first %}<strong> ⭐</strong>{% endif %}
+                    </td>
+                    <td>{{ res.potencia_efetiva_kw | round(1) }} kW</td>
+                    <td>{{ res.tempo_recarga_horas | round(2) }} horas</td>
+                    <td>R$ {{ res.carregador.preco | round(2) }}</td>
+                </tr>
+            {% endfor %}
+            {% if not resultados_comparativos %}
+            <tr>
+                <td colspan="4">Nenhum carregador compatível encontrado (Potência Efetiva = 0).</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Relatório gerado pela Calculadora EV. Estimativas baseadas nos dados fornecidos.</p>
+    </div>
+</body>
+</html>

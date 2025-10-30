@@ -1,0 +1,86 @@
+{% extends "admin_layout.html" %}
+{% block title %}Gerenciar Veículos{% endblock %}
+
+{% block content %}
+    <h1>Gerenciar Veículos</h1>
+    
+    <div class="form-card">
+        <h2>Cadastrar Novo Veículo (Manual)</h2>
+        <form action="{{ url_for('add_veiculo') }}" method="POST">
+            <div class="form-grid">
+                <div>
+                    <label for="v_marca">Marca:</label>
+                    <input type="text" id="v_marca" name="marca" required>
+                </div>
+                <div>
+                    <label for="v_modelo">Modelo:</label>
+                    <input type="text" id="v_modelo" name="modelo" required>
+                </div>
+                <div>
+                    <label for="v_capacidade">Capacidade da Bateria (kWh):</label>
+                    <input type="number" step="0.1" id="v_capacidade" name="capacidade_bateria_kwh" required>
+                </div>
+                <div>
+                    <label for="v_potencia_max_ac">Potência Máx. Carga AC (kW):</label>
+                    <input type="number" step="0.1" id="v_potencia_max_ac" name="potencia_max_carga_ac_kw" required>
+                </div>
+                <div>
+                    <label for="v_potencia_max_dc">Potência Máx. Carga DC (kW):</label>
+                    <input type="number" step="0.1" id="v_potencia_max_dc" name="potencia_max_carga_dc_kw" value="0.0" required>
+                </div>
+            </div>
+            <button type="submit">Cadastrar Veículo</button>
+        </form>
+    </div>
+    <hr>
+    <div class="form-card">
+        <h2>Importar Veículos via CSV</h2>
+        <form action="{{ url_for('importar_veiculos') }}" method="POST" enctype="multipart/form-data">
+            <p>Colunas: <strong>marca, modelo, capacidade_bateria_kwh, potencia_max_carga_ac_kw, potencia_max_carga_dc_kw</strong></p>
+            <label for="csv_file">Ficheiro CSV:</label>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+            <button type="submit">Importar CSV</button>
+        </form>
+    </div>
+
+    <hr>
+
+    <div class="form-card">
+        <h2>Veículos Cadastrados</h2>
+        <style>
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f0f0f0; }
+        </style>
+        <table>
+            <thead>
+                <tr>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Bateria (kWh)</th>
+                    <th>Max AC (kW)</th>
+                    <th>Max DC (kW)</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in veiculos %}
+                <tr>
+                    <td>{{ v.marca }}</td>
+                    <td>{{ v.modelo }}</td>
+                    <td>{{ v.capacidade_bateria_kwh }}</td>
+                    <td>{{ v.potencia_max_carga_ac_kw }}</td>
+                    <td>{{ v.potencia_max_carga_dc_kw }}</td>
+                    <td>
+                        <a href="{{ url_for('editar_veiculo', veiculo_id=v.id) }}">Editar</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6">Nenhum veículo cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
