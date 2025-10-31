@@ -2,6 +2,18 @@
 {% block title %}Simulador Comparativo{% endblock %}
 
 {% block content %}
+<style>
+    tr.over-24h-warning { 
+        background-color: #fff3cd !important; /* Laranja/Amarelo */
+        color: #856404; 
+    }
+    tr.over-24h-warning td:first-child::after {
+        content: " ⚠️ Atenção: > 24h/dia";
+        font-weight: bold;
+        font-size: 0.9em;
+    }
+</style>
+
 <div class="container">
     <div class="form-card">
         <h1>Comparativo de Carregadores</h1>
@@ -31,13 +43,13 @@
                 </div>
                 
                 <div>
-                    <label for="recargas_mes">Número de Recargas por Mês (20% a 80%):</label>
-                    <input type="number" step="1" id="recargas_mes" name="recargas_mes" 
-                           value="{{ custos_info.recargas_mes if custos_info else '20' }}" required>
+                    <label for="recargas_dia">Número Médio de Recargas por Dia:</label>
+                    <input type="number" step="0.1" id="recargas_dia" name="recargas_dia" 
+                           value="{{ custos_info.recargas_dia if custos_info else '1.0' }}" required>
                 </div>
             </div>
             
-            <button type"submit" style="margin-top: 20px;">Gerar Relatório Comparativo</button>
+            <button type="submit" style="margin-top: 20px;">Gerar Relatório Comparativo</button>
         </form>
     </div>
 
@@ -45,11 +57,12 @@
     <div class="form-card">
         <h2>Resultados para: {{ veiculo_selecionado.nome_completo }}</h2>
 
-        <h3>Estimativa de Gastos (para {{ custos_info.recargas_mes }} recargas/mês)</h3>
+        <h3>Estimativa de Gastos (Baseado em {{ custos_info.recargas_dia }} recargas/dia)</h3>
         <p>
             <strong>Custo por Recarga (20% a 80%):</strong> R$ {{ custos_gerais.custo_por_recarga | round(2) }} <br>
-            <strong>Gasto Mensal:</strong> R$ {{ custos_gerais.custo_mensal | round(2) }} <br>
-            <strong>Gasto Anual:</strong> R$ {{ custos_gerais.custo_anual | round(2) }}
+            <strong>Gasto Diário (Média):</strong> R$ {{ custos_gerais.custo_diario | round(2) }} <br>
+            <strong>Gasto Mensal (Média):</strong> R$ {{ custos_gerais.custo_mensal | round(2) }} <br>
+            <strong>Gasto Anual (Média):</strong> R$ {{ custos_gerais.custo_anual | round(2) }}
         </p>
         <hr>
         <h3>Relatório Comparativo de Carregadores</h3>
@@ -58,8 +71,7 @@
             th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
             th { background-color: #f0f0f0; }
             tr.best-choice { background-color: #d4edda; font-weight: bold; }
-            tr.best-choice td:first-child::after { content: " ⭐ Melhor Custo-Benefício"; color: #155724; }
-            tr.incompatible { background-color: #f8d7da; color: #721c24; text-decoration: line-through; }
+            tr.best-choice td:first-child::after { content: " ⭐ Melhor Custo-Benefício (Mais Rápido)"; color: #155724; }
         </style>
         <table>
             <thead>
@@ -72,7 +84,7 @@
             </thead>
             <tbody>
                 {% for res in resultados_comparativos %}
-                    <tr class="{% if loop.first %}best-choice{% endif %}">
+                    <tr class="{% if res.is_over_24h %}over-24h-warning{% elif loop.first %}best-choice{% endif %}">
                         <td>
                             {{ res.carregador.marca }} {{ res.carregador.modelo }} 
                             (<strong>{{ res.carregador.tipo_corrente }}</strong>)
@@ -85,8 +97,8 @@
             </tbody>
         </table>
         <small style="margin-top: 10px; display: block;">
-            * Carregadores incompatíveis (ex: Carregador DC para um carro que só aceita AC) não são exibidos.<br>
-            * O <strong>Melhor Custo-Benefício</strong> é calculado com base no menor preço por kW de potência efetiva (Preço / Potência Efetiva).
+            * O <strong>Melhor Custo-Benefício</strong> é agora o carregador com o <strong>menor tempo de recarga</strong> (mais rápido). O preço é usado como critério de desempate.<br>
+            * (Aviso ⚠️) indica que a quantidade de recargas diárias solicitada ultrapassa 24 horas com este carregador.
         </small>
     </div>
     {% endif %}

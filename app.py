@@ -75,7 +75,7 @@ with app.app_context():
 
 # --- 3. Lógica de Cálculo Central (Helper Function) ---
 
-def calcular_relatorio_comparativo(veiculo_id, custo_kwh, recargas_mes):
+def calcular_relatorio_comparativo(veiculo_id, custo_kwh, recargas_dia): # MUDANÇA: recargas_dia
     """
     Função central que executa toda a lógica de cálculo.
     Isso evita repetição de código entre a simulação web e o PDF.
@@ -87,13 +87,17 @@ def calcular_relatorio_comparativo(veiculo_id, custo_kwh, recargas_mes):
     # Cálculos de Custo (independentes do carregador)
     kwh_para_recarga = veiculo.capacidade_bateria_kwh * 0.60 # 20% a 80%
     custo_por_recarga = kwh_para_recarga * custo_kwh
-    custo_mensal = custo_por_recarga * recargas_mes
+    
+    # MUDANÇA: Lógica de custo baseada em recargas diárias
+    custo_diario = custo_por_recarga * recargas_dia
+    custo_mensal = custo_diario * 30 # Média de 30 dias
+    custo_anual = custo_diario * 365
     
     custos_gerais = {
         "custo_por_recarga": custo_por_recarga,
         "custo_mensal": custo_mensal,
-        "custo_diario": custo_mensal / 30.0,
-        "custo_anual": custo_mensal * 12.0
+        "custo_diario": custo_diario,
+        "custo_anual": custo_anual
     }
     
     lista_de_resultados = []
@@ -101,42 +105,45 @@ def calcular_relatorio_comparativo(veiculo_id, custo_kwh, recargas_mes):
     for carregador in carregadores_db:
         potencia_efetiva_kw = 0.0
         
-        # --- A NOVA LÓGICA (Request 2) ---
-        # Verifica o tipo de corrente e usa o limite correto do carro
+        # Lógica AC/DC (sem alteração)
         if carregador.tipo_corrente == 'AC':
             potencia_efetiva_kw = min(veiculo.potencia_max_carga_ac_kw, carregador.potencia_saida_kw)
         elif carregador.tipo_corrente == 'DC':
             potencia_efetiva_kw = min(veiculo.potencia_max_carga_dc_kw, carregador.potencia_saida_kw)
         
-        # Se a potência efetiva for 0, o carregador é INCOMPATÍVEL (ex: DC em carro só AC).
-        # Não o adicionamos ao relatório.
         if potencia_efetiva_kw <= 0:
             continue
 
         # Cálculo de Tempo
         tempo_recarga_horas = kwh_para_recarga / potencia_efetiva_kw
         
-        # Cálculo de Custo-Benefício (R$ por kW efetivo)
+        # MUDANÇA: (Ponto 5) Lógica de Aviso 24h
+        horas_totais_dia = tempo_recarga_horas * recargas_dia
+        is_over_24h = (horas_totais_dia > 24)
+        
+        # Custo-Benefício (mantido R$/kW, mas a ordenação vai mudar)
         if carregador.preco > 0:
             custo_beneficio_reais_por_kw = carregador.preco / potencia_efetiva_kw
         else:
-            custo_beneficio_reais_por_kw = float('inf') # Joga para o fim da lista
+            custo_beneficio_reais_por_kw = float('inf') 
         
         lista_de_resultados.append({
             "carregador": carregador,
             "potencia_efetiva_kw": potencia_efetiva_kw,
             "tempo_recarga_horas": tempo_recarga_horas,
-            "custo_beneficio_reais_por_kw": custo_beneficio_reais_por_kw
+            "custo_beneficio_reais_por_kw": custo_beneficio_reais_por_kw,
+            "is_over_24h": is_over_24h # NOVO
         })
             
-    # Ordena a lista pelo custo-benefício (menor é melhor)
+    # MUDANÇA: (Ponto 3) Nova Lógica de Ordenação
+    # 1º Critério: Menor tempo de recarga (mais rápido é melhor)
+    # 2º Critério: Menor preço (se o tempo for igual)
     resultados_comparativos = sorted(
         lista_de_resultados, 
-        key=lambda x: x['custo_beneficio_reais_por_kw']
+        key=lambda x: (x['tempo_recarga_horas'], x['carregador'].preco)
     )
     
     return veiculo, custos_gerais, resultados_comparativos
-
 
 # --- 4. Rotas do Simulador (Request 5 ATUALIZADA) ---
 
@@ -147,23 +154,24 @@ def index():
 
 @app.route('/simular', methods=['GET', 'POST'])
 def simulador():
-    """
-    Página principal do simulador.
-    GET: Mostra os formulários.
-    POST: Calcula e mostra resultados OU gera PDF.
-    """
-    
     veiculos_db = Veiculo.query.order_by(Veiculo.marca, Veiculo.modelo).all()
     
     resultados_comparativos = None
     veiculo_selecionado = None
     custos_gerais = None
-    custos_info = request.form # Mantém os valores do form
+    custos_info = request.form 
 
-            
-        # Se 'action' for 'simular', ele continua e renderiza a página normal
-        # com os resultados (abaixo).
-
+    if request.method == 'POST':
+        veiculo_id = request.form['veiculo_id']
+        custo_kwh = float(request.form['custo_kwh'])
+        
+        # MUDANÇA: (Ponto 4)
+        recargas_dia = float(request.form['recargas_dia']) 
+        
+        veiculo_selecionado, custos_gerais, resultados_comparativos = \
+            calcular_relatorio_comparativo(veiculo_id, custo_kwh, recargas_dia) # MUDANÇA
+    
+    # O resto da função renderiza normalmente
     return render_template(
         'simulador.html', 
         veiculos=veiculos_db, 
@@ -172,7 +180,6 @@ def simulador():
         custos_gerais=custos_gerais,
         resultados_comparativos=resultados_comparativos
     )
-
 
 # --- 5. Rotas de Admin (Request 1, 3, 4 ATUALIZADAS) ---
 
@@ -381,7 +388,114 @@ def editar_carregador(carregador_id):
     
     # GET: Mostra o formulário de edição com os dados atuais
     return render_template('editar_carregador.html', carregador=carregador)
+@app.route('/admin/comparar', methods=['GET', 'POST'])
+def comparar_direto():
+    """
+    (Ponto 6) Página de Comparação Direta 1x1.
+    """
+    veiculos_db = Veiculo.query.order_by(Veiculo.marca, Veiculo.modelo).all()
+    carregadores_db = Carregador.query.order_by(Carregador.marca, Carregador.modelo).all()
+    resultado = None
+    erro = None
+    
+    if request.method == 'POST':
+        try:
+            veiculo = Veiculo.query.get(request.form['veiculo_id'])
+            carregador = Carregador.query.get(request.form['carregador_id'])
+            custo_kwh = float(request.form['custo_kwh'])
+            recargas_dia = float(request.form['recargas_dia'])
 
+            # Lógica de cálculo (similar ao 'calcular_relatorio_comparativo' mas para 1 item)
+            potencia_efetiva_kw = 0.0
+            if carregador.tipo_corrente == 'AC':
+                potencia_efetiva_kw = min(veiculo.potencia_max_carga_ac_kw, carregador.potencia_saida_kw)
+            elif carregador.tipo_corrente == 'DC':
+                potencia_efetiva_kw = min(veiculo.potencia_max_carga_dc_kw, carregador.potencia_saida_kw)
+
+            if potencia_efetiva_kw <= 0:
+                erro = "Combinação incompatível (Ex: Carregador DC num carro que só aceita AC)."
+            else:
+                kwh_para_recarga = veiculo.capacidade_bateria_kwh * 0.60
+                tempo_recarga_horas = kwh_para_recarga / potencia_efetiva_kw
+                is_over_24h = (tempo_recarga_horas * recargas_dia) > 24
+                
+                # Calcula custos
+                custo_por_recarga = kwh_para_recarga * custo_kwh
+                custo_diario = custo_por_recarga * recargas_dia
+                
+                resultado = {
+                    "veiculo": veiculo,
+                    "carregador": carregador,
+                    "potencia_efetiva_kw": potencia_efetiva_kw,
+                    "tempo_recarga_horas": tempo_recarga_horas,
+                    "recargas_dia": recargas_dia,
+                    "is_over_24h": is_over_24h,
+                    "custos_gerais": {
+                        "custo_por_recarga": custo_por_recarga,
+                        "custo_diario": custo_diario,
+                        "custo_mensal": custo_diario * 30,
+                    }
+                }
+        except Exception as e:
+            erro = f"Erro ao processar: {e}"
+
+    return render_template(
+        'comparativo_direto.html',
+        veiculos=veiculos_db,
+        carregadores=carregadores_db,
+        resultado=resultado,
+        erro=erro
+    )
+
+@app.route('/admin/comissao', methods=['GET', 'POST'])
+def comissao():
+    """
+    (Ponto 7) Página de Simulação de Comissão (EaaS).
+    """
+    veiculos_db = Veiculo.query.order_by(Veiculo.marca, Veiculo.modelo).all()
+    carregadores_db = Carregador.query.order_by(Carregador.marca, Carregador.modelo).all()
+    resultado = None
+    erro = None
+    
+    if request.method == 'POST':
+        try:
+            veiculo = Veiculo.query.get(request.form['veiculo_id'])
+            # (Não precisamos do carregador para esta lógica, apenas a energia do veículo)
+            
+            kwh_para_recarga = veiculo.capacidade_bateria_kwh * 0.60
+            
+            # Inputs do formulário
+            recargas_dia = float(request.form['recargas_dia'])
+            preco_venda_kwh = float(request.form['preco_venda_kwh'])
+            porcentagem_cliente = float(request.form['porcentagem_cliente'])
+
+            # Lógica de Faturamento
+            receita_por_recarga = kwh_para_recarga * preco_venda_kwh
+            faturamento_bruto_diario = receita_por_recarga * recargas_dia
+            faturamento_bruto_mensal = faturamento_bruto_diario * 30
+
+            # Lógica de Comissão
+            comissao_cliente_mensal = faturamento_bruto_mensal * (porcentagem_cliente / 100)
+            faturamento_operadora_mensal = faturamento_bruto_mensal - comissao_cliente_mensal
+            
+            resultado = {
+                "kwh_para_recarga": kwh_para_recarga,
+                "receita_por_recarga": receita_por_recarga,
+                "faturamento_bruto_mensal": faturamento_bruto_mensal,
+                "comissao_cliente_mensal": comissao_cliente_mensal,
+                "faturamento_operadora_mensal": faturamento_operadora_mensal
+            }
+            
+        except Exception as e:
+            erro = f"Erro ao processar: {e}"
+
+    return render_template(
+        'comissao.html',
+        veiculos=veiculos_db,
+        carregadores=carregadores_db,
+        resultado=resultado,
+        erro=erro
+    )
 # --- 7. Execução da Aplicação ---
 if __name__ == '__main__':
                 

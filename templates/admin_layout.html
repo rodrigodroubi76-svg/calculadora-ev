@@ -47,9 +47,13 @@
     <nav class="sidebar">
         <h2>Admin EV</h2>
         <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <hr style="border-top: 1px solid #555;">
         <a href="{{ url_for('admin_veiculos') }}">Gerenciar Veículos</a>
         <a href="{{ url_for('admin_carregadores') }}">Gerenciar Carregadores</a>
-        <a href="{{ url_for('simulador') }}">Ver Simulador</a>
+        <hr style="border-top: 1px solid #555;">
+        <a href="{{ url_for('simulador') }}">Simulador Comparativo</a>
+        <a href="{{ url_for('comparar_direto') }}">Comparativo Direto (1x1)</a>
+        <a href="{{ url_for('comissao') }}">Simular Comissão</a>
     </nav>
     <main class="content">
         {% with messages = get_flashed_messages(with_categories=true) %}
