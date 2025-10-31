@@ -14,7 +14,7 @@
                     <select id="veiculo" name="veiculo_id" required>
                         <option value="">-- Selecione um Veículo --</option>
                         {% for v in veiculos %}
-                            <option value="{{ v.id }}" {% if v.id == request.form.veiculo_id|int %}selected{% endif %}>
+                            <option value="{{ v.id }}" {% if 'veiculo_id' in request.form and v.id == request.form.veiculo_id|int %}selected{% endif %}>
                                 {{ v.nome_completo }}
                             </option>
                         {% endfor %}
@@ -25,7 +25,7 @@
                     <select id="carregador" name="carregador_id" required>
                         <option value="">-- Selecione um Carregador --</option>
                         {% for c in carregadores %}
-                            <option value="{{ c.id }}" {% if c.id == request.form.carregador_id|int %}selected{% endif %}>
+                            <option value="{{ c.id }}" {% if 'carregador_id' in request.form and c.id == request.form.carregador_id|int %}selected{% endif %}>
                                 {{ c.nome_completo }}
                             </option>
                         {% endfor %}
@@ -33,11 +33,11 @@
                 </div>
                 <div>
                     <label for="custo_kwh">Custo do kWh (R$):</label>
-                    <input type="number" step="0.01" id="custo_kwh" name="custo_kwh" value="{{ request.form.custo_kwh if request.form.custo_kwh else '0.80' }}" required>
+                    <input type="number" step="0.01" id="custo_kwh" name="custo_kwh" value="{{ request.form['custo_kwh'] if 'custo_kwh' in request.form else '0.80' }}" required>
                 </div>
                 <div>
                     <label for="recargas_dia">Número Médio de Recargas por Dia:</label>
-                    <input type="number" step="0.1" id="recargas_dia" name="recargas_dia" value="{{ request.form.recargas_dia if request.form.recargas_dia else '1.0' }}" required>
+                   <input type="number" step="0.1" id="recargas_dia" name="recargas_dia" value="{{ request.form['recargas_dia'] if 'recargas_dia' in request.form else '1.0' }}" required>
                 </div>
             </div>
             <button type="submit" style="margin-top: 20px;">Gerar Relatório</button>
